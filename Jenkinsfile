@@ -1,37 +1,44 @@
 pipeline {
     agent any
-
+    
     environment {
-        IMAGE_NAME = "puneetkathpalia/htmlmine"
-        TAG = "latest"
+        DOCKER_IMAGE = 'puneetkathpalia/htmlmine'
+        DOCKER_TAG = 'latest'
     }
-
+    
     stages {
-        stage('Checkout Code') {
+        stage('Checkout SCM') {
             steps {
-                git branch: 'main', url: 'https://github.com/PuneetKathpalia/HTMLMINE.git'
+                checkout scm
             }
         }
-
+        
         stage('Build Docker Image') {
             steps {
                 script {
-                    bat 'docker build -t %IMAGE_NAME%:%TAG% .'
+                    // Build the Docker image
+                    sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
                 }
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    script {
+                        // Log in to Docker Hub
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
+                    }
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                bat 'docker push %IMAGE_NAME%:%TAG%'
+                script {
+                    // Push the Docker image to Docker Hub
+                    sh 'docker push ${DOCKER_IMAGE}:${DOCKER_TAG}'
+                }
             }
         }
     }
